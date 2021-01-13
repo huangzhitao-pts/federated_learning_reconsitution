@@ -14,7 +14,7 @@ class Organization(Base):
     __tablename__ = 'organization'
 
     id = Column('id', Integer, primary_key=True, autoincrement=True)
-    uid = Column('uid', String(128), unique=True)
+    uid = Column('uid', String(36), unique=True)
     name = Column('name', String(128))
     users = relationship('User', backref='organization')
 
@@ -55,9 +55,10 @@ class User(Base):
     __tablename__ = 'user'
 
     id = Column('id', Integer, primary_key=True, autoincrement=True)
+    uid = Column('uid', String(36), unique=True)
     username = Column('username', String(128))
     password_hash = Column('password', String(128))
-    organization_uid = Column(String(128), ForeignKey('organization.uid', ondelete='CASCADE'))
+    organization_uid = Column(String(36), ForeignKey('organization.uid', ondelete='CASCADE'))
     role_id = Column(Integer, ForeignKey('roles.id', ondelete='CASCADE'))
 
     @property
@@ -76,17 +77,21 @@ class Workspace(Base):
     __tablename__ = 'workspace'
 
     id = Column('id', Integer, primary_key=True, autoincrement=True)
-    uid = Column('uid', String(128))
+    uid = Column('uid', String(36), unique=True)
     name = Column('name', String(128), nullable=False, server_default="")
     description = Column('description', String(256), nullable=False, server_default="")
-    party_info = Column('party_info', Text)
+    user_uid = Column('user_uid', String(36), nullable=False, server_default="")
+    organization_uid = Column('organization_uid', String(36), nullable=False, server_default="")
+    is_creator = Column('is_creator', Integer, nullable=False, server_default="0")
 
 
 class DataSet(Base):
     __tablename__ = 'dataSet'
 
     id = Column('id', Integer, primary_key=True, autoincrement=True)
-    uid = Column('uid', String(128), unique=True)
+    uid = Column('uid', String(36), unique=True)
+    user_uid = Column('user_uid', String(36), nullable=False, server_default="")
+    organization_uid = Column('organization_uid', String(36), nullable=False, server_default="")
     name = Column('name', String(128), nullable=False, server_default="")
     description = Column('description', String(256), nullable=False, server_default="")
     file_path = Column('file_path', String(256), nullable=False, server_default="")
@@ -102,7 +107,7 @@ class SchemaField(Base):
     explain = Column('explain', String(256), nullable=False, server_default="")
     type_ = Column('type_', String(128), nullable=False, server_default="Integer")
     distribute_type = Column('distribute_type', String(128), nullable=False, server_default="连续型")
-    dataSet_uid = Column(String(128), ForeignKey("dataSet.uid", ondelete='CASCADE'))
+    dataSet_uid = Column(String(36), ForeignKey("dataSet.uid", ondelete='CASCADE'))
 
 
 class WorkspaceDataset(Base):
@@ -115,39 +120,53 @@ class WorkspaceDataset(Base):
 
 
 if __name__ == '__main__':
-    # from sqlalchemy import create_engine
-    # from sqlalchemy.orm import sessionmaker, scoped_session
-    #
-    # engine = create_engine(
-    #             "mysql+pymysql://root:111@192.168.89.155:3310/federated_learning?charset=utf8",
-    #             echo=False,
-    #             max_overflow=0,
-    #             pool_size=20,
-    #             pool_timeout=30,
-    #             pool_recycle=3600
-    # )
-    # Session = sessionmaker(bind=engine)
-    # db = scoped_session(Session)
-    # roles = {
-    #     'USER': (Permission.USER, True),
-    #     'ORG_ADMIN': (
-    #         Permission.ORG_ADMIN | Permission.USER, False),
-    #     'SYSTEM_ADMIN': (
-    #         Permission.SYSTEM_ADMIN | Permission.ORG_ADMIN | Permission.USER, False)
-    # }
-    #
-    # for r in roles:
-    #     role = db.query(Role).filter_by(name=r).first()
-    #     print(role)
-    # #     if role is None:
-    # #         role = Role(name=r)
-    # #     role.permissions = roles[r][0]
-    # #     role.default = roles[r][1]
-    # #     print("-------")
-    # #     db.add(role)
-    # # db.commit()
-    # Role.insert_roles(db)
+    from uuid import uuid1
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker, scoped_session
 
-    # Base.metadata.create_all(engine)
-    print(generate_password_hash("123"))
+    engine = create_engine(
+                "mysql+pymysql://root:111@192.168.89.155:3310/federated_learning?charset=utf8",
+                echo=False,
+                max_overflow=0,
+                pool_size=20,
+                pool_timeout=30,
+                pool_recycle=3600
+    )
+    Session = sessionmaker(bind=engine)
+    db = scoped_session(Session)
+
+    # Role.insert_roles(db)
+    # point = Organization()
+    # point.uid = uuid1()
+    # point.name = "point"
+    # zhongyuan = Organization()
+    # zhongyuan.uid = uuid1()
+    # zhongyuan.name = "zhongyuan"
+    # db.add(point)
+    # db.add(zhongyuan)
+    #
+    # db.add(User(
+    #     uid=uuid1(),
+    #     username="hzt",
+    #     password="pbkdf2:sha256:150000$A4y5a3Pg$725e2cfc8c466c82751d5a68b5cafb19b6751f4dc36edd3c1ea8a0bf24e843a5",
+    #     organization_uid=point.uid,
+    #     role_id=2
+    # ))
+    # db.add(User(
+    #     uid=uuid1(),
+    #     username="zy",
+    #     password="pbkdf2:sha256:150000$A4y5a3Pg$725e2cfc8c466c82751d5a68b5cafb19b6751f4dc36edd3c1ea8a0bf24e843a5",
+    #     organization_uid=zhongyuan.uid,
+    #     role_id=2
+    # ))
+    # db.delete(
+    #     db.query(Organization).filter_by(name="zhongyuan").first()
+    # )
+    # db.commit()
+    # db.query(Organization).filter_by(name="point").first().delete()
+    # db.delete(r)
+    # db.commit()
+    # print(generate_password_hash("123"))
     # Base.metadata.drop_all(engine)
+    # Base.metadata.create_all(engine)
+

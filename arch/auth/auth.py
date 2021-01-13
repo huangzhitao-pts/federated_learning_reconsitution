@@ -12,7 +12,7 @@ def login_required(view_func):
             try:
                 """
                 {
-                    "user_id": String,
+                    "user_uid": String,
                     "user_name": String,
                     "organization_uid": String,
                     "role_id": String
@@ -21,9 +21,9 @@ def login_required(view_func):
                 g.token = decode_json(token)
                 return view_func(*args, **kwargs)
             except Exception as e:
+                print(e)
                 print("authentication failure")
-                # pass
-        return abort(403)
+        return abort(404)
     return decorated_function
 
 
