@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey
+from sqlalchemy import Column, ForeignKey, Integer, \
+    String, Boolean,  DateTime, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -77,7 +78,7 @@ class Workspace(Base):
     __tablename__ = 'workspace'
 
     id = Column('id', Integer, primary_key=True, autoincrement=True)
-    uid = Column('uid', String(36), unique=True)
+    uid = Column('uid', String(36))
     name = Column('name', String(128), nullable=False, server_default="")
     description = Column('description', String(256), nullable=False, server_default="")
     user_uid = Column('user_uid', String(36), nullable=False, server_default="")
@@ -114,9 +115,27 @@ class WorkspaceDataset(Base):
     __tablename__ = 'workspaceDataset'
     id = Column('id', Integer, primary_key=True, autoincrement=True)
     workspace_uid = Column('workspace_uid', String(128), nullable=False, server_default="")
-    dataset_uid = Column('dataset_uid', String(128), nullable=False, server_default="")
+    dataSet_uid = Column('dataSet_uid', String(128), nullable=False, server_default="")
     workspace_name = Column('workspace_name', String(128), nullable=False, server_default="")
-    dataset_name = Column('dataset_name', String(128), nullable=False, server_default="")
+    dataSet_name = Column('dataSet_name', String(128), nullable=False, server_default="")
+    user_uid = Column('user_uid', String(36), nullable=False, server_default="")
+
+
+class Job(Base):
+    __tablename__ = 'Job'
+
+    id = Column('id', Integer, primary_key=True, autoincrement=True)
+    uid = Column('uid', String(36), primary_key=True)  # job_id
+    user_uid = Column('user_uid', String(36))
+    workspace_uid = Column('workspace_uid', String(36))
+    name = Column('name', String(128))
+    description = Column('description', String(256))
+    creation_timestamp = Column('creation_timestamp', DateTime, default=datetime.utcnow)
+    training_timestamp = Column('training_timestamp', DateTime, nullable=True)
+    completion_timestamp = Column('completion_timestamp', DateTime, nullable=True)
+    conf = Column('conf', Text)
+    state = Column('state', Integer, default=0)
+    job_type = Column('job_type', Integer, default=1)  # 1 for horizontal, 2 for vertical, 0 for all_job_type
 
 
 if __name__ == '__main__':
@@ -124,26 +143,34 @@ if __name__ == '__main__':
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker, scoped_session
 
-    engine = create_engine(
-                "mysql+pymysql://root:111@192.168.89.155:3310/federated_learning?charset=utf8",
-                echo=False,
-                max_overflow=0,
-                pool_size=20,
-                pool_timeout=30,
-                pool_recycle=3600
-    )
-    Session = sessionmaker(bind=engine)
-    db = scoped_session(Session)
-
+    # engine = create_engine(
+    #             "mysql+pymysql://root:111@192.168.89.155:3310/federated_learning?charset=utf8",
+    #             echo=False,
+    #             max_overflow=0,
+    #             pool_size=20,
+    #             pool_timeout=30,
+    #             pool_recycle=3600
+    # )
+    # Session = sessionmaker(bind=engine)
+    # db = scoped_session(Session)
+    #
     # Role.insert_roles(db)
+    #
     # point = Organization()
     # point.uid = uuid1()
     # point.name = "point"
+    #
     # zhongyuan = Organization()
     # zhongyuan.uid = uuid1()
     # zhongyuan.name = "zhongyuan"
+    #
+    # tencent = Organization()
+    # tencent.uid = uuid1()
+    # tencent.name = "tencent"
+    #
     # db.add(point)
     # db.add(zhongyuan)
+    # db.add(tencent)
     #
     # db.add(User(
     #     uid=uuid1(),
@@ -159,13 +186,15 @@ if __name__ == '__main__':
     #     organization_uid=zhongyuan.uid,
     #     role_id=2
     # ))
-    # db.delete(
-    #     db.query(Organization).filter_by(name="zhongyuan").first()
-    # )
+    # db.add(User(
+    #     uid=uuid1(),
+    #     username="tx",
+    #     password="pbkdf2:sha256:150000$A4y5a3Pg$725e2cfc8c466c82751d5a68b5cafb19b6751f4dc36edd3c1ea8a0bf24e843a5",
+    #     organization_uid=tencent.uid,
+    #     role_id=2
+    # ))
     # db.commit()
-    # db.query(Organization).filter_by(name="point").first().delete()
-    # db.delete(r)
-    # db.commit()
+
     # print(generate_password_hash("123"))
     # Base.metadata.drop_all(engine)
     # Base.metadata.create_all(engine)
