@@ -15,13 +15,13 @@ from arch.storage.model.register_table import SchemaField, DataSet, WorkspaceDat
 from arch.storage.sql_result_to_dict import model_to_dict
 
 
-def db_select_(db, model, result=None, **kwargs):
-    resp = db.query(model).filter_by(**kwargs).all()
+def db_select_(model, db, result=None, **kwargs):
+    resp = db.query(model).filter_by(**kwargs)
     return resp.all() if result else resp.first()
 
 
-db_dataset = partial(db_select_, app.db, DataSet)
-db_workspace_dataset = partial(db_select_, app.db, WorkspaceDataset)
+db_dataset = partial(db_select_, DataSet)
+db_workspace_dataset = partial(db_select_, WorkspaceDataset)
 
 
 @register.route("/dataSet/", methods=["GET", "POST", "PATCH", "DELETE"])
@@ -60,7 +60,7 @@ def dataSet():
                 DataSet.user_uid == g.token["user_uid"],
             ).all()
         else:
-            result = db_dataset(result=True, user_uid=g.token["user_uid"])
+            result = db_dataset(app.db, result=True, user_uid=g.token["user_uid"])
         if result:
             return jsonify({
                 "code": 200,
@@ -125,7 +125,7 @@ def dataSet():
         data = request.get_json()
 
         # permission
-        if db_dataset(uid=data.get("uid"), user_uid=g.token["user_uid"]):
+        if db_dataset(app.db, uid=data.get("uid"), user_uid=g.token["user_uid"]):
             for f in data["fields"]:
                 app.db.query(SchemaField).filter_by(
                     id=f.pop("id"),
@@ -138,9 +138,9 @@ def dataSet():
         uid = request.args.get("uid")
 
         # has or permission
-        dataSet = db_dataset(uid=uid, user_uid=g.token["user_uid"])
+        dataSet = db_dataset(app.db, uid=uid, user_uid=g.token["user_uid"])
         if dataSet:
-            is_use = db_workspace_dataset(dataset_uid=uid)
+            is_use = db_workspace_dataset(app.db, dataset_uid=uid)
             if not is_use:
                 # db delete
                 app.db.query(DataSet).filter_by(

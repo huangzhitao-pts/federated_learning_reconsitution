@@ -122,7 +122,7 @@ class WorkspaceDataset(Base):
 
 
 class Job(Base):
-    __tablename__ = 'Job'
+    __tablename__ = 'job'
 
     id = Column('id', Integer, primary_key=True, autoincrement=True)
     uid = Column('uid', String(36), primary_key=True)  # job_id
@@ -135,7 +135,8 @@ class Job(Base):
     completion_timestamp = Column('completion_timestamp', DateTime, nullable=True)
     conf = Column('conf', Text)
     state = Column('state', Integer, default=0)
-    job_type = Column('job_type', Integer, default=1)  # 1 for horizontal, 2 for vertical, 0 for all_job_type
+    job_type = Column('job_type', Integer, default=0)  # 0 align | 1 feature_engineering | 2 horizontal | 3 for vertical
+    model_url = Column('model_url', String(256), nullable=False, server_default="")
 
 
 if __name__ == '__main__':
@@ -143,14 +144,14 @@ if __name__ == '__main__':
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker, scoped_session
 
-    # engine = create_engine(
-    #             "mysql+pymysql://root:111@192.168.89.155:3310/federated_learning?charset=utf8",
-    #             echo=False,
-    #             max_overflow=0,
-    #             pool_size=20,
-    #             pool_timeout=30,
-    #             pool_recycle=3600
-    # )
+    engine = create_engine(
+                "mysql+pymysql://root:111@192.168.89.155:3310/federated_learning?charset=utf8",
+                echo=False,
+                max_overflow=0,
+                pool_size=20,
+                pool_timeout=30,
+                pool_recycle=3600
+    )
     # Session = sessionmaker(bind=engine)
     # db = scoped_session(Session)
     #

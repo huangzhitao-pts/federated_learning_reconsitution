@@ -9,20 +9,20 @@ def login_required(view_func):
         authorization = request.headers.get("Authorization")
         if authorization:
             token = authorization.split()[-1]
-            try:
-                """
-                {
-                    "user_uid": String,
-                    "user_name": String,
-                    "organization_uid": String,
-                    "role_id": String
-                }
-                """
-                g.token = decode_json(token)
-                return view_func(*args, **kwargs)
-            except Exception as e:
-                print(e)
-                print("authentication failure")
+            # try:
+            """
+            {
+                "user_uid": String,
+                "user_name": String,
+                "organization_uid": String,
+                "role_id": String
+            }
+            """
+            g.token = decode_json(token)
+            return view_func(*args, **kwargs)
+            # except Exception as e:
+            #     print(e)
+            #     print("authentication failure")
         return abort(404)
     return decorated_function
 

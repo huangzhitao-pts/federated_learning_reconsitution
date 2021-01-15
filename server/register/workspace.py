@@ -11,14 +11,14 @@ from arch.storage.model.register_table import Workspace, Organization, \
 from arch.storage.sql_result_to_dict import model_to_dict
 
 
-def db_select_(db, model, result=None, **kwargs):
-    resp = db.query(model).filter_by(**kwargs).all()
+def db_select_(model, db, result=None, **kwargs):
+    resp = db.query(model).filter_by(**kwargs)
     return resp.all() if result else resp.first()
 
 
-db_workspace = partial(db_select_, app.db, Workspace)
-db_dataset = partial(db_select_, app.db, DataSet)
-db_workspace_dataset = partial(db_select_, app.db, WorkspaceDataset)
+db_workspace = partial(db_select_, Workspace)
+db_dataset = partial(db_select_, DataSet)
+db_workspace_dataset = partial(db_select_, WorkspaceDataset)
 
 
 @register.route("/workspace/", methods=["GET", "POST", "PATCH", "DELETE"])
@@ -55,9 +55,9 @@ def workspace():
     if req_method == "GET":
         uid = request.args.get("uid")
         if uid:
-            result = db_workspace(uid=uid, user_uid=g.token["user_uid"])
+            result = db_workspace(app.db, uid=uid, user_uid=g.token["user_uid"])
         else:
-            result = db_workspace(result=True, user_uid=g.token["user_uid"])
+            result = db_workspace(app.db, result=True, user_uid=g.token["user_uid"])
         if result:
             return jsonify(model_to_dict(result))
     elif req_method == "POST":
@@ -97,7 +97,7 @@ def workspace():
     elif req_method == "PATCH":
         data = request.get_json()
         uid = data.get("uid")
-        workspace_ = db_workspace(uid=uid, user_uid=g.token["user_uid"], is_creator=1)
+        workspace_ = db_workspace(app.db, uid=uid, user_uid=g.token["user_uid"], is_creator=1)
         if workspace_:
 
             # org user is exist
@@ -160,6 +160,7 @@ def workspace():
         uid = request.args.get("uid")
         # is creator
         is_creator = db_workspace(
+            app.db,
             uid=uid,
             user_uid=g.token["user_uid"],
             organization_uid=g.token["organization_uid"],
@@ -233,12 +234,14 @@ def workspace_dataSet():
         data = request.get_json()
 
         workspace = db_workspace(
+            app.db,
             uid=data["workspace_uid"],
             user_uid=g.token["user_uid"],
             organization_uid=g.token["organization_uid"]
         )
 
         dataSet = db_dataset(
+            app.db,
             uid=data["dataSet_uid"],
             user_uid=g.token["user_uid"],
             organization_uid=g.token["organization_uid"],
@@ -246,6 +249,7 @@ def workspace_dataSet():
 
         if workspace and dataSet:
             if not db_workspace_dataset(
+                    app.db,
                     workspace_uid=data["workspace_uid"],
                     dataSet_uid=data["dataSet_uid"]):
                 app.db.add(WorkspaceDataset(

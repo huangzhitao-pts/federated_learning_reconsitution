@@ -22,9 +22,9 @@ db_workspace_dataset = partial(db_select_, WorkspaceDataset)
 db_Job = partial(db_select_, Job)
 
 
-@job.route("/train/align/", methods=["GET", "POST", "DELETE"])
+@job.route("/train/featureEngineering/", methods=["GET", "POST", "DELETE"])
 @login_required
-def align_job():
+def feature_engineering():
     """
     GET：
     data = {
@@ -39,9 +39,8 @@ def align_job():
         "name": String,
         "description": String,
         "conf": {
-            "dataSet": [
-                {"organization": "dataSet"}
-            ]
+            "align_dataSet": {"name": String, "uid": String},
+            "param": dict
         },
     }
 
@@ -61,9 +60,9 @@ def align_job():
 
         if db_workspace(app.db, uid=workspace_uid, user_uid=g.token["user_uid"]):
             if job_id:
-                job = db_Job(app.db, uid=job_id)
+                job = db_Job(app.db, uid=job_id, job_type=1)
             else:
-                job = db_Job(app.db, result=True, workspace_uid=data["workspace_uid"])
+                job = db_Job(app.db, result=True, workspace_uid=data["workspace_uid"], job_type=1)
             if job:
                 return jsonify({
                     "code": 200,
@@ -80,12 +79,10 @@ def align_job():
         if is_operability:
             job_ = db_Job(
                 app.db,
-                user_uid=g.token["user_uid"],
-                workspace_uid=data["workspace_uid"],
                 name=data["name"],
+                workspace_uid=data["workspace_uid"],
             )
             if not job_:
-
                 app.db.add(Job(
                     uid=uuid1(),
                     user_uid=g.token["user_uid"],
@@ -93,7 +90,7 @@ def align_job():
                     name=data["name"],
                     description=data["description"],
                     conf=json.dumps(data["conf"]),
-                    job_type=0,
+                    job_type=1,
                 ))
                 app.db.commit()
                 return jsonify({"code": 200})
@@ -106,7 +103,7 @@ def align_job():
             workspace_uid=data["workspace_uid"],
             uid=data["job_uid"],
             user_uid=g.token["user_uid"],
-            job_type=0
+            job_type=1
         )
         if result:
             model_url = result.model_url
