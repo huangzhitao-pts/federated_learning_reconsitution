@@ -6,9 +6,9 @@ from flask import current_app as app
 
 from . import register
 from arch.auth import login_required
-from arch.storage.model.register_table import Workspace, Organization, \
+from arch.storage.mysql.model import Workspace, Organization, \
     User, WorkspaceDataset, DataSet
-from arch.storage.sql_result_to_dict import model_to_dict
+from arch.storage.mysql.sql_result_to_dict import model_to_dict
 
 
 def db_select_(model, db, result=None, **kwargs):
@@ -64,6 +64,13 @@ def workspace():
         data = request.get_json()
         workspace_uid=uuid1()
 
+        # workspace exits
+        if db_workspace(
+                app.db,
+                name=data["name"],
+                user_uid=g.token["user_uid"],
+                organization_uid=g.token["organization_uid"]):
+            abort(403)
         # party exist
         for i in data["party_info"]["party_list"]:
             r = app.db.query(User).join(
@@ -73,7 +80,6 @@ def workspace():
             ).with_entities(
                 Organization.uid
             ).first()
-            print(r)
             if not r:
                 abort(403)
             app.db.add(Workspace(

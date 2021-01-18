@@ -3,7 +3,8 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 
 
 class Session(object):
-    _instance = None
+    # _instance = None
+    _INSTANCE = None
     FLAG = False
 
     def __init__(self, _DATABASE_URL):
@@ -21,10 +22,10 @@ class Session(object):
             self.__class__.FLAG = True
 
     def __getattr__(self, item):
-        assert hasattr(self.db, item)
-        return getattr(self.db, item)
+        if hasattr(self.db, item):
+            return getattr(self.db, item)
 
     def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = object.__new__(cls)
-        return cls._instance
+        if cls._INSTANCE is None:
+            cls._INSTANCE = object.__new__(cls)
+        return cls._INSTANCE

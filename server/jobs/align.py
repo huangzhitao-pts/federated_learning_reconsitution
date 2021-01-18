@@ -5,10 +5,10 @@ from functools import partial
 from flask import request, g, jsonify
 from flask import current_app as app
 
-from . import train
+from . import job
 from arch.auth import login_required
-from arch.storage.model.register_table import Workspace, WorkspaceDataset, DataSet, Job
-from arch.storage.sql_result_to_dict import model_to_dict
+from arch.storage.mysql.model import Workspace, WorkspaceDataset, DataSet, Job
+from arch.storage.mysql.sql_result_to_dict import model_to_dict
 
 
 def db_select_(model, db, result=None, **kwargs):
@@ -22,9 +22,9 @@ db_workspace_dataset = partial(db_select_, WorkspaceDataset)
 db_Job = partial(db_select_, Job)
 
 
-@train.route("/train/vertical/", methods=["GET", "POST", "DELETE"])
+@job.route("/jobs/align/", methods=["GET", "POST", "DELETE"])
 @login_required
-def vertical():
+def align_job():
     """
     GET：
     data = {
@@ -40,16 +40,9 @@ def vertical():
         "description": String,
         "conf": {
             "dataSet": [
-                {"name": String, "uid": String},
-            ],
-            "target_dataSet": {"name": String, "uid": String, "label": String},
-            "epoch": String,
-            "algorithm": {
-                "type": "",
-                "name": "",
-                "param": {}
-            }
-        }
+                {"organization": "dataSet"}
+            ]
+        },
     }
 
     DELETE:
@@ -68,13 +61,13 @@ def vertical():
 
         if db_workspace(app.db, uid=workspace_uid, user_uid=g.token["user_uid"]):
             if job_id:
-                job = db_Job(app.db, uid=job_id, job_type=3)
+                job = db_Job(app.db, uid=job_id)
             else:
-                job = db_Job(app.db, result=True, workspace_uid=data["workspace_uid"], job_type=3)
+                job = db_Job(app.db, result=True, workspace_uid=data["workspace_uid"])
             if job:
                 return jsonify({
                     "code": 200,
-                    "train": model_to_dict(job)
+                    "jobs": model_to_dict(job)
                 })
 
     if req_method == "POST":
@@ -87,10 +80,12 @@ def vertical():
         if is_operability:
             job_ = db_Job(
                 app.db,
-                name=data["name"],
+                user_uid=g.token["user_uid"],
                 workspace_uid=data["workspace_uid"],
+                name=data["name"],
             )
             if not job_:
+
                 app.db.add(Job(
                     uid=uuid1(),
                     user_uid=g.token["user_uid"],
@@ -98,7 +93,7 @@ def vertical():
                     name=data["name"],
                     description=data["description"],
                     conf=json.dumps(data["conf"]),
-                    job_type=3,
+                    job_type=0,
                 ))
                 app.db.commit()
                 return jsonify({"code": 200})
@@ -111,7 +106,7 @@ def vertical():
             workspace_uid=data["workspace_uid"],
             uid=data["job_uid"],
             user_uid=g.token["user_uid"],
-            job_type=3
+            job_type=0
         )
         if result:
             model_url = result.model_url

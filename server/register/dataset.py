@@ -11,8 +11,8 @@ from werkzeug.utils import secure_filename
 
 from . import register
 from arch.auth import login_required
-from arch.storage.model.register_table import SchemaField, DataSet, WorkspaceDataset
-from arch.storage.sql_result_to_dict import model_to_dict
+from arch.storage.mysql.model import SchemaField, DataSet, WorkspaceDataset
+from arch.storage.mysql.sql_result_to_dict import model_to_dict
 
 
 def db_select_(model, db, result=None, **kwargs):

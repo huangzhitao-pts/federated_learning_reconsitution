@@ -14,19 +14,19 @@ def encode_json(token):
 if __name__ == '__main__':
     # print(_md5("12345678"))
     print(encode_json({
-                    "user_uid": "78217c8b-562e-11eb-97b7-3c2c30f715a7",
+                    "user_uid": "6346b26b-5930-11eb-8ed2-3c2c30f715a7",
                     "user_name": "hzt",
-                    "organization_uid": "78215597-562e-11eb-9542-3c2c30f715a7",
+                    "organization_uid": "6346b268-5930-11eb-a743-3c2c30f715a7",
                     "role_id": "2"
                 }))
-    # eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX3VpZCI6Ijc4MjE3YzhiLTU2MmUtMTFlYi05N2I3LTNjMmMzMGY3MTVhNyIsInVzZXJfbmFtZSI6Imh6dCIsIm9yZ2FuaXphdGlvbl91aWQiOiI3ODIxNTU5Ny01NjJlLTExZWItOTU0Mi0zYzJjMzBmNzE1YTciLCJyb2xlX2lkIjoiMiJ9.yOk3ugR31nZeRNnEdZE7aIyJAuzYxB5Q9b2I6ob5f7I
+    # eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX3VpZCI6IjYzNDZiMjZiLTU5MzAtMTFlYi04ZWQyLTNjMmMzMGY3MTVhNyIsInVzZXJfbmFtZSI6Imh6dCIsIm9yZ2FuaXphdGlvbl91aWQiOiI2MzQ2YjI2OC01OTMwLTExZWItYTc0My0zYzJjMzBmNzE1YTciLCJyb2xlX2lkIjoiMiJ9.UC_paQbnbUT67gy3Hu-YPgwolutOywAil6zw3CGp5sc
     print(encode_json({
-                    "user_uid": "7849d1d1-562e-11eb-8262-3c2c30f715a7",
+                    "user_uid": "635fa797-5930-11eb-8110-3c2c30f715a7",
                     "user_name": "zy",
-                    "organization_uid": "78217c8a-562e-11eb-abdd-3c2c30f715a7",
+                    "organization_uid": "6346b269-5930-11eb-8f10-3c2c30f715a7",
                     "role_id": "2"
                 }))
-    # eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX3VpZCI6Ijc4NDlkMWQxLTU2MmUtMTFlYi04MjYyLTNjMmMzMGY3MTVhNyIsInVzZXJfbmFtZSI6Inp5Iiwib3JnYW5pemF0aW9uX3VpZCI6Ijc4MjE3YzhhLTU2MmUtMTFlYi1hYmRkLTNjMmMzMGY3MTVhNyIsInJvbGVfaWQiOiIyIn0.gDIgpiJqlvMkuVxcKZfqao_BLwYl8k2DIESNY4nFP_M
+    # eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX3VpZCI6IjYzNWZhNzk3LTU5MzAtMTFlYi04MTEwLTNjMmMzMGY3MTVhNyIsInVzZXJfbmFtZSI6Inp5Iiwib3JnYW5pemF0aW9uX3VpZCI6IjYzNDZiMjY5LTU5MzAtMTFlYi04ZjEwLTNjMmMzMGY3MTVhNyIsInJvbGVfaWQiOiIyIn0.huyH0XI9l_zil4Z69jx1-jDhiVyUr25ypAPJ7WX4hK0
 
     # print(decode_json(bytes("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhIjoxfQ.zyz6EmjQbUlYjDqMCfT8dLNvU6_bDlAKGBdfFJdkS7g", encoding="utf-8")))
     # print(jwt.decode("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhIjoxfQ.zyz6EmjQbUlYjDqMCfT8dLNvU6_bDlAKGBdfFJdkS7g1", '4ae5', algorithm='HS256'))

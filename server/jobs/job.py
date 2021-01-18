@@ -5,10 +5,12 @@ from functools import partial
 from flask import request, g, jsonify, views
 from flask import current_app as app
 
-from . import train
+from . import jobs
 from arch.auth import login_required
-from arch.storage.model.register_table import Workspace, WorkspaceDataset, DataSet, Job
-from arch.storage.sql_result_to_dict import model_to_dict
+from arch.storage.mysql.model import Workspace, WorkspaceDataset, DataSet, Job
+from arch.storage.mysql.sql_result_to_dict import model_to_dict
+
+from arch.job import align
 
 
 def db_select_(model, db, result=None, **kwargs):
@@ -22,7 +24,7 @@ db_workspace_dataset = partial(db_select_, WorkspaceDataset)
 db_job = partial(db_select_, Job)
 
 
-# @train.route("/train/align/", methods=["GET", "POST", "DELETE"])
+# @jobs.route("/jobs/align/", methods=["GET", "POST", "DELETE"])
 # @login_required
 # def align_job():
 #     """
@@ -67,7 +69,7 @@ db_job = partial(db_select_, Job)
 #             if job:
 #                 return jsonify({
 #                     "code": 200,
-#                     "train": model_to_dict(job)
+#                     "jobs": model_to_dict(job)
 #                 })
 # 
 #     if req_method == "POST":
@@ -119,17 +121,35 @@ db_job = partial(db_select_, Job)
 #     return jsonify({"code": 400})
 
 
-class Jobs(views.MethodView):
+class JobState(object):
+    UNKNOWN = 0
+    DISABLED = 1
+    TRAINING = 2
+    FINISHED = 3
+    FAILURE = 4
+    PAUSED = 5
+    PENDING = 6
+
+
+class JobType(object):
+    ALIGN = 0
+    FEATURE_ENGINEERING = 1
+    HORIZONTAL = 2
+    VERTICAL = 3
+
+    def get(self, item):
+        item = item.upper()
+        if hasattr(self, item):
+            return getattr(self, item)
+
+
+class Job(views.MethodView):
     methods = ["get", "post", "put", "patch", "delete"]
     decorators = (login_required,)
-    JOB_TYPE = {
-        "align": 0,
-        "feature_engineering": 1,
-        "horizontal": 2,
-        "vertical": 3,
-    }
+    JOB_TYPE = JobType()
+    JOB_STATE = JobState()
 
-    def get(self, job):
+    def get(self, job_type):
         """
         data = {
             "workspace_uid": String
@@ -144,7 +164,7 @@ class Jobs(views.MethodView):
 
         workspace_uid = data["workspace_uid"]
         job_id = data.get("job_uid")
-        job_type = self.JOB_TYPE.get(job)
+        job_type = self.JOB_TYPE.get(job_type)
 
         if db_workspace(app.db, uid=workspace_uid, user_uid=g.token["user_uid"]):
             if job_id:
@@ -156,7 +176,7 @@ class Jobs(views.MethodView):
                 resp["data"] = model_to_dict(job)
         return jsonify(resp)
 
-    def post(self, job):
+    def post(self, job_type):
         """
         align:
         data = {
@@ -186,7 +206,7 @@ class Jobs(views.MethodView):
         data = {
             "workspace_uid": String,
             "name": String,
-            "description": String,
+            "description": String,conf
             "conf": {
                 "dataSet": [
                     {"name": String, "uid": String},
@@ -226,7 +246,7 @@ class Jobs(views.MethodView):
         resp = {"code": 400}
 
         data = request.get_json()
-        job_type = self.JOB_TYPE.get(job)
+        job_type = self.JOB_TYPE.get(job_type)
 
         is_operability = db_workspace(
             app.db,
@@ -240,23 +260,63 @@ class Jobs(views.MethodView):
                 workspace_uid=data["workspace_uid"],
             )
             if not job_:
-                app.db.add(Job(
-                    uid=uuid1(),
-                    user_uid=g.token["user_uid"],
-                    workspace_uid=data["workspace_uid"],
-                    name=data["name"],
-                    description=data["description"],
-                    conf=json.dumps(data["conf"]),
-                    job_type=job_type,
-                ))
-                app.db.commit()
-                resp["code"] = 200
+                job_uid = str(uuid1())
+
+                conf_dir = os.path.join(app.config["BASE_DIR_PATH"], "conf", job_uid)
+                if not os.path.exists(conf_dir):
+                    os.mkdir(conf_dir)
+                with open(f"{conf_dir}/conf.json", "w", encoding="utf-8") as fp:
+                    app.db.add(Job(
+                        uid=job_uid,
+                        user_uid=g.token["user_uid"],
+                        workspace_uid=data["workspace_uid"],
+                        name=data["name"],
+                        description=data["description"],
+                        conf_path=f"{conf_dir}/conf.json",
+                        job_type=job_type,
+                    ))
+                    json.dump(data["conf"], fp)
+                    app.db.commit()
+                    resp["code"] = 200
         return jsonify(resp)
 
-    def patch(self, job):
-        pass
+    def patch(self, job_type):
+        """
+        data = {
+            "uid": String,
+        }
 
-    def delete(self, job):
+
+        :param job:
+        :return:
+        """
+        resp = {"code": 400}
+
+        data = request.get_json()
+        job_type = self.JOB_TYPE.get(job_type)
+
+        # align
+        if job_type == self.JOB_TYPE.ALIGN:
+            # check job
+            job = db_job(
+                app.db,
+                uid=data["uid"],
+                user_uid=g.token["user_uid"],
+                state=self.JOB_STATE.UNKNOWN,
+                job_type=self.JOB_TYPE.ALIGN
+            )
+            print(job)
+            if job:
+                # start job
+                job.state = self.JOB_STATE.TRAINING
+                app.db.add(job)
+                app.db.commit()
+
+                result = align.delay(3, 4)
+                print(result)
+        return "ok"
+
+    def delete(self, job_type):
         """
         data = {
             "workspace_uid": String,
@@ -268,7 +328,7 @@ class Jobs(views.MethodView):
         resp = {"code": 400}
 
         data = request.get_json()
-        job_type = self.JOB_TYPE.get(job)
+        job_type = self.JOB_TYPE.get(job_type)
 
         result = db_job(
             app.db,
@@ -281,15 +341,20 @@ class Jobs(views.MethodView):
             model_url = result.model_url
             if os.path.exists(model_url):
                 os.remove(model_url)
+
+            conf_path = result.conf_path
+            if os.path.exists(conf_path):
+                os.remove(conf_path)
+
             app.db.delete(result)
             app.db.commit()
             resp["code"] = 200
         return jsonify(resp)
 
 
-job_view = Jobs.as_view(name='Jobs')
-train.add_url_rule("/train/<string:job>/", view_func=job_view, methods=["GET", "POST", "DELETE", "PATCH"])
+job_view = Job.as_view(name='Job')
+jobs.add_url_rule("/job/<string:job_type>/", view_func=job_view, methods=["GET", "POST", "DELETE", "PATCH"])
 
-# train.add_url_rule(
-#     "/train/<string:uid>", view_func=job_view, methods=["DELETE", "PATCH"]
+# jobs.add_url_rule(
+#     "/jobs/<string:uid>", view_func=job_view, methods=["DELETE", "PATCH"]
 # )

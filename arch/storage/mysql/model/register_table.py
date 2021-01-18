@@ -133,25 +133,32 @@ class Job(Base):
     creation_timestamp = Column('creation_timestamp', DateTime, default=datetime.utcnow)
     training_timestamp = Column('training_timestamp', DateTime, nullable=True)
     completion_timestamp = Column('completion_timestamp', DateTime, nullable=True)
-    conf = Column('conf', Text)
+    conf_path = Column('conf', String(256), nullable=False, server_default="")
     state = Column('state', Integer, default=0)
+    # UNKNOWN = 0
+    # DISABLED = 1
+    # TRAINING = 2
+    # FINISHED = 3
+    # FAILURE = 4
+    # PAUSED = 5
+    # PENDING = 6
     job_type = Column('job_type', Integer, default=0)  # 0 align | 1 feature_engineering | 2 horizontal | 3 for vertical
-    model_url = Column('model_url', String(256), nullable=False, server_default="")
+    model_path = Column('model_url', String(256), nullable=False, server_default="")
 
 
 if __name__ == '__main__':
     from uuid import uuid1
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker, scoped_session
-
-    engine = create_engine(
-                "mysql+pymysql://root:111@192.168.89.155:3310/federated_learning?charset=utf8",
-                echo=False,
-                max_overflow=0,
-                pool_size=20,
-                pool_timeout=30,
-                pool_recycle=3600
-    )
+    # from sqlalchemy import create_engine
+    # from sqlalchemy.orm import sessionmaker, scoped_session
+    #
+    # engine = create_engine(
+    #             "mysql+pymysql://root:111@192.168.89.155:3310/federated_learning?charset=utf8",
+    #             echo=False,
+    #             max_overflow=0,
+    #             pool_size=20,
+    #             pool_timeout=30,
+    #             pool_recycle=3600
+    # )
     # Session = sessionmaker(bind=engine)
     # db = scoped_session(Session)
     #

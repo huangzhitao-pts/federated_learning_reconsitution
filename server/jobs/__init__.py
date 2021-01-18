@@ -3,7 +3,7 @@
 from flask import Blueprint
 
 
-train = Blueprint('train', __name__)
+jobs = Blueprint('jobs', __name__)
 
 
 # from . import align

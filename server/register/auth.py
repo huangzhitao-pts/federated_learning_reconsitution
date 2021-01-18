@@ -4,7 +4,7 @@ from flask import current_app as app
 from . import register
 from arch.auth.token import encode_json
 from arch.auth import login_required
-from arch.storage.model.register_table import User, Organization
+from arch.storage.mysql.model import User, Organization
 
 
 @register.route("/login", methods=["POST"])

@@ -7,8 +7,8 @@ from flask import current_app as app
 
 from . import job
 from arch.auth import login_required
-from arch.storage.model.register_table import Workspace, WorkspaceDataset, DataSet, Job
-from arch.storage.sql_result_to_dict import model_to_dict
+from arch.storage.mysql.model import Workspace, WorkspaceDataset, DataSet, Job
+from arch.storage.mysql.sql_result_to_dict import model_to_dict
 
 
 def db_select_(model, db, result=None, **kwargs):
@@ -22,7 +22,7 @@ db_workspace_dataset = partial(db_select_, WorkspaceDataset)
 db_Job = partial(db_select_, Job)
 
 
-@job.route("/train/featureEngineering/", methods=["GET", "POST", "DELETE"])
+@job.route("/jobs/featureEngineering/", methods=["GET", "POST", "DELETE"])
 @login_required
 def feature_engineering():
     """
@@ -66,7 +66,7 @@ def feature_engineering():
             if job:
                 return jsonify({
                     "code": 200,
-                    "train": model_to_dict(job)
+                    "jobs": model_to_dict(job)
                 })
 
     if req_method == "POST":
