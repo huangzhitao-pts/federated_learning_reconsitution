@@ -137,9 +137,9 @@ class Job(Base):
     state = Column('state', Integer, default=0)
     # UNKNOWN = 0
     # DISABLED = 1
-    # TRAINING = 2
+    # STARTED = 2
     # FINISHED = 3
-    # FAILURE = 4
+    # FAILED = 4
     # PAUSED = 5
     # PENDING = 6
     job_type = Column('job_type', Integer, default=0)  # 0 align | 1 feature_engineering | 2 horizontal | 3 for vertical

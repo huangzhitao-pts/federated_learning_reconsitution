@@ -2,6 +2,9 @@ from uuid import uuid1
 import os
 import json
 from functools import partial
+
+from rq.command import send_stop_job_command
+
 from flask import request, g, jsonify, views
 from flask import current_app as app
 
@@ -11,6 +14,8 @@ from arch.storage.mysql.model import Workspace, WorkspaceDataset, DataSet, Job
 from arch.storage.mysql.sql_result_to_dict import model_to_dict
 
 from arch.job import align
+from arch.job.job_state import JobState
+from arch.job.job_type import JobType
 
 
 def db_select_(model, db, result=None, **kwargs):
@@ -121,26 +126,9 @@ db_job = partial(db_select_, Job)
 #     return jsonify({"code": 400})
 
 
-class JobState(object):
-    UNKNOWN = 0
-    DISABLED = 1
-    TRAINING = 2
-    FINISHED = 3
-    FAILURE = 4
-    PAUSED = 5
-    PENDING = 6
-
-
-class JobType(object):
-    ALIGN = 0
-    FEATURE_ENGINEERING = 1
-    HORIZONTAL = 2
-    VERTICAL = 3
-
-    def get(self, item):
-        item = item.upper()
-        if hasattr(self, item):
-            return getattr(self, item)
+class JobAction(object):
+    START = 0
+    PAUSE = 1
 
 
 class Job(views.MethodView):
@@ -148,6 +136,7 @@ class Job(views.MethodView):
     decorators = (login_required,)
     JOB_TYPE = JobType()
     JOB_STATE = JobState()
+    JOB_ACTION = JobAction()
 
     def get(self, job_type):
         """
@@ -168,9 +157,14 @@ class Job(views.MethodView):
 
         if db_workspace(app.db, uid=workspace_uid, user_uid=g.token["user_uid"]):
             if job_id:
-                job = db_job(app.db, uid=job_id, job_type=job_type)
+                job = app.redis.hgetall(job_id)
+                if not job:
+                    job = db_job(app.db, uid=job_id, job_type=job_type)
+                    job = model_to_dict(job)
+                    app.redis.hmset(job_id, job)
             else:
                 job = db_job(app.db, result=True, workspace_uid=data["workspace_uid"], job_type=job_type)
+                job = model_to_dict(job)
             if job:
                 resp["code"] = 200
                 resp["data"] = model_to_dict(job)
@@ -273,6 +267,7 @@ class Job(views.MethodView):
                         name=data["name"],
                         description=data["description"],
                         conf_path=f"{conf_dir}/conf.json",
+                        state=self.JOB_STATE.DISABLED,
                         job_type=job_type,
                     ))
                     json.dump(data["conf"], fp)
@@ -283,37 +278,46 @@ class Job(views.MethodView):
     def patch(self, job_type):
         """
         data = {
-            "uid": String,
+            "job_uid": String,
+            "action": # start | pause
         }
-
-
         :param job:
         :return:
         """
         resp = {"code": 400}
 
         data = request.get_json()
-        job_type = self.JOB_TYPE.get(job_type)
 
-        # align
-        if job_type == self.JOB_TYPE.ALIGN:
-            # check job
-            job = db_job(
-                app.db,
-                uid=data["uid"],
-                user_uid=g.token["user_uid"],
-                state=self.JOB_STATE.UNKNOWN,
-                job_type=self.JOB_TYPE.ALIGN
-            )
-            print(job)
-            if job:
-                # start job
-                job.state = self.JOB_STATE.TRAINING
+        # job type
+        assert hasattr(self.JOB_TYPE, f"{job_type}_job")
+        job_type = getattr(self.JOB_TYPE, f"{job_type}_job")
+
+        # check job
+        job = db_job(
+            app.db,
+            uid=data["job_uid"],
+            user_uid=g.token["user_uid"],
+            # state=self.JOB_STATE.DISABLED,
+            job_type=self.JOB_TYPE.ALIGN
+        )
+        print(job)
+        if job:
+            action = data["action"]
+            job_state = job.state
+            if action == "start" and job_state == self.JOB_STATE.DISABLED:
+                # update db job status
+                job.state = self.JOB_STATE.STARTED
                 app.db.add(job)
-                app.db.commit()
+                # update redis job status
+                # start job
+                job_type.delay(job.uid)
+            elif action == "pause" and job_state == self.JOB_STATE.STARTED:
+                job.state = self.JOB_STATE.PAUSED
+                send_stop_job_command(app.redis, data["job_uid"])
+                # update redis job status
+            app.redis.hset(data["job_uid"], vars(job))
+            app.db.commit()
 
-                result = align.delay(3, 4)
-                print(result)
         return "ok"
 
     def delete(self, job_type):
@@ -330,23 +334,28 @@ class Job(views.MethodView):
         data = request.get_json()
         job_type = self.JOB_TYPE.get(job_type)
 
-        result = db_job(
+        job = db_job(
             app.db,
             workspace_uid=data["workspace_uid"],
             uid=data["job_uid"],
             user_uid=g.token["user_uid"],
             job_type=job_type
         )
-        if result:
-            model_url = result.model_url
+        if job:
+            if job.state == self.JOB_STATE.STARTED:
+                send_stop_job_command(app.redis, data["job_uid"])
+                app.redis.delete(data["job_uid"])
+                app.redis.delete(f"rq:job:{data['job_uid']}")
+
+            model_url = job.model_url
             if os.path.exists(model_url):
                 os.remove(model_url)
 
-            conf_path = result.conf_path
+            conf_path = job.conf_path
             if os.path.exists(conf_path):
                 os.remove(conf_path)
 
-            app.db.delete(result)
+            app.db.delete(job)
             app.db.commit()
             resp["code"] = 200
         return jsonify(resp)

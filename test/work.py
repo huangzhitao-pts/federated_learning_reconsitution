@@ -12,7 +12,15 @@
 # q = Queue(connection=redis_conn)
 # print(len(q.failed_job_registry))
 
+
 class A:
     a = 1
 
-print(getattr(A, "a"))
+
+a = A()
+a.b = 2
+# print(getattr(A, "a"))
+print(A.__dict__)
+print(vars(A))
+print(a.__dict__)
+print(vars(a))
