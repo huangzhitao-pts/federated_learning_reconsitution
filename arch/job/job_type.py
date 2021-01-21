@@ -7,10 +7,11 @@ class JobType(object):
     HORIZONTAL = 2
     VERTICAL = 3
 
-    def get(self, item):
+    @classmethod
+    def get(cls, item):
         item = item.upper()
-        if hasattr(self, item):
-            return getattr(self, item)
+        if hasattr(cls, item):
+            return getattr(cls, item)
 
     def align_job(self, *args, **kwargs):
         align.delay(*args, **kwargs)

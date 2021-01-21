@@ -134,9 +134,9 @@ class JobAction(object):
 class Job(views.MethodView):
     methods = ["get", "post", "put", "patch", "delete"]
     decorators = (login_required,)
-    JOB_TYPE = JobType()
-    JOB_STATE = JobState()
-    JOB_ACTION = JobAction()
+    JOB_TYPE = JobType
+    JOB_STATE = JobState
+    JOB_ACTION = JobAction
 
     def get(self, job_type):
         """
