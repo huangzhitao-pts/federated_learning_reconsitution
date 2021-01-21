@@ -1,13 +1,18 @@
-from arch.storage.redis import RedisConnect
-from arch.job.job_state import JobState
-
+from datetime import datetime
 from rq.decorators import job
+
+from arch.storage.redis import RedisConnect
+from arch.storage.mysql.session import Session
+from arch.job.job_state import JobState
+from arch.storage.mysql.model.register_table import Job
 
 from config import DeployMentConfig
 
 redis = RedisConnect(
     host=DeployMentConfig.REDIS_HOST,
     port=DeployMentConfig.REDIS_PORT)
+
+db = Session(DeployMentConfig.SQLALCHEMY_DATABASE_URI)
 
 
 @job(DeployMentConfig.RQ_QUEUE, connection=redis, timeout=DeployMentConfig.RQ_TIMEOUT)
@@ -17,7 +22,11 @@ def align(job_id):
     print("align end !!!")
 
     # update redis state
-    redis.hset(job_id, "status", JobState.FINISHED)
+    update_data = {"status":JobState.FINISHED, "completion_timestamp": datetime.utcnow}
+    redis.hmset(job_id, update_data)
+    # update mysql state
+    db.query(Job).filter_by(uid=job_id).update(update_data)
+    db.commit()
     return job_id
 
 

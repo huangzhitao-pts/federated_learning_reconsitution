@@ -1,4 +1,5 @@
 from uuid import uuid1
+from datetime import datetime
 import os
 import json
 from functools import partial
@@ -307,6 +308,7 @@ class Job(views.MethodView):
             if action == "start" and job_state == self.JOB_STATE.DISABLED:
                 # update db job status
                 job.state = self.JOB_STATE.STARTED
+                job.training_timestamp = datetime.utcnow
                 app.db.add(job)
                 # update redis job status
                 # start job
@@ -315,7 +317,9 @@ class Job(views.MethodView):
                 job.state = self.JOB_STATE.PAUSED
                 send_stop_job_command(app.redis, data["job_uid"])
                 # update redis job status
-            app.redis.hset(data["job_uid"], vars(job))
+            app.redis.hmset(data["job_uid"], {k: v for k, v in vars(job) if not k.startswith("_")})
+            # app.redis.hset(data["job_uid"], "")
+
             app.db.commit()
 
         return "ok"

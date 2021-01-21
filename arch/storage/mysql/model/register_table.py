@@ -148,6 +148,9 @@ class Job(Base):
 
 if __name__ == '__main__':
     from uuid import uuid1
+    a = WorkspaceDataset()
+    a.id = 1
+    print(vars(a))
     # from sqlalchemy import create_engine
     # from sqlalchemy.orm import sessionmaker, scoped_session
     #
