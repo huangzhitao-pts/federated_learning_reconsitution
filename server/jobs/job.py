@@ -308,19 +308,26 @@ class Job(views.MethodView):
             if action == "start" and job_state == self.JOB_STATE.DISABLED:
                 # update db job status
                 job.state = self.JOB_STATE.STARTED
-                job.training_timestamp = datetime.utcnow
+                job.training_timestamp = datetime.utcnow()
                 app.db.add(job)
                 # update redis job status
                 # start job
-                job_type.delay(job.uid)
+                # job_type.delay(job.uid)
+                job_type(job.uid)
             elif action == "pause" and job_state == self.JOB_STATE.STARTED:
                 job.state = self.JOB_STATE.PAUSED
                 send_stop_job_command(app.redis, data["job_uid"])
-                # update redis job status
-            app.redis.hmset(data["job_uid"], {k: v for k, v in vars(job) if not k.startswith("_")})
+            app.db.commit()
+
+            # update redis job status
+            mapping_data = {k: v for k, v in vars(job).items() if not k.startswith("_")}
+            mapping_data["creation_timestamp"] = mapping_data["creation_timestamp"].timestamp()
+            mapping_data["completion_timestamp"] = mapping_data["completion_timestamp"].timestamp()
+            mapping_data["training_timestamp"] = mapping_data["training_timestamp"].timestamp()
+
+            app.redis.hmset(data["job_uid"], mapping_data)
             # app.redis.hset(data["job_uid"], "")
 
-            app.db.commit()
 
         return "ok"
 

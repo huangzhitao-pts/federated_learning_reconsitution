@@ -22,7 +22,7 @@ def align(job_id):
     print("align end !!!")
 
     # update redis state
-    update_data = {"status":JobState.FINISHED, "completion_timestamp": datetime.utcnow}
+    update_data = {"status":JobState.FINISHED, "completion_timestamp": datetime.utcnow()}
     redis.hmset(job_id, update_data)
     # update mysql state
     db.query(Job).filter_by(uid=job_id).update(update_data)

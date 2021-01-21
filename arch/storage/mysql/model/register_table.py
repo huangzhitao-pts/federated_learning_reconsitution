@@ -131,8 +131,8 @@ class Job(Base):
     name = Column('name', String(128))
     description = Column('description', String(256))
     creation_timestamp = Column('creation_timestamp', DateTime, default=datetime.utcnow)
-    training_timestamp = Column('training_timestamp', DateTime, nullable=True)
-    completion_timestamp = Column('completion_timestamp', DateTime, nullable=True)
+    training_timestamp = Column('training_timestamp', DateTime, default=datetime.utcnow)
+    completion_timestamp = Column('completion_timestamp', DateTime, default=datetime.utcnow)
     conf_path = Column('conf', String(256), nullable=False, server_default="")
     state = Column('state', Integer, default=0)
     # UNKNOWN = 0
