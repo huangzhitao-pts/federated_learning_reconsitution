@@ -9,6 +9,7 @@ def login_required(view_func):
         authorization = request.headers.get("Authorization")
         if authorization:
             token = authorization.split()[-1]
+            print(token)
             # try:
             """
             {

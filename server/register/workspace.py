@@ -62,7 +62,7 @@ def workspace():
             return jsonify(model_to_dict(result))
     elif req_method == "POST":
         data = request.get_json()
-        workspace_uid=uuid1()
+        workspace_uid=str(uuid1())
 
         # workspace exits
         if db_workspace(

@@ -96,7 +96,7 @@ def dataSet():
             # read dataset field save to db
             df = pd.read_csv(file_path)
 
-            dataSet_uid = uuid1()
+            dataSet_uid = str(uuid1())
             for c in df.columns:
                 type_ = str(df[c].dtype)
                 if type_ == "Object":

@@ -132,7 +132,7 @@ class JobAction(object):
     PAUSE = 1
 
 
-class Job(views.MethodView):
+class Jobs(views.MethodView):
     methods = ["get", "post", "put", "patch", "delete"]
     decorators = (login_required,)
     JOB_TYPE = JobType
@@ -247,6 +247,8 @@ class Job(views.MethodView):
             uid=data["workspace_uid"],
             user_uid=g.token["user_uid"]
         )
+        print(is_operability)
+        print(job_type)
         if is_operability:
             job_ = db_job(
                 app.db,
@@ -260,7 +262,7 @@ class Job(views.MethodView):
                 if not os.path.exists(conf_dir):
                     os.mkdir(conf_dir)
                 with open(f"{conf_dir}/conf.json", "w", encoding="utf-8") as fp:
-                    app.db.add(Job(
+                    job_ = Job(
                         uid=job_uid,
                         user_uid=g.token["user_uid"],
                         workspace_uid=data["workspace_uid"],
@@ -268,8 +270,9 @@ class Job(views.MethodView):
                         description=data["description"],
                         conf_path=f"{conf_dir}/conf.json",
                         state=self.JOB_STATE.DISABLED,
-                        job_type=job_type,
-                    ))
+                        job_type=job_type
+                    )
+                    app.db.add(job_)
                     json.dump(data["conf"], fp)
                     app.db.commit()
                     resp["code"] = 200
@@ -289,7 +292,7 @@ class Job(views.MethodView):
         data = request.get_json()
 
         # job type
-        assert hasattr(self.JOB_TYPE, f"{job_type}_job")
+        #assert hasattr(self.JOB_TYPE, f"{job_type}_job")
 
         # check job
         job = db_job(
@@ -311,7 +314,8 @@ class Job(views.MethodView):
                 # update redis job status
                 # start job
                 # job_type.delay(job.uid)
-                getattr(self.JOB_TYPE, f"{job_type}_job")(job_id=job.uid)
+                #getattr(self.JOB_TYPE, f"{job_type}_job")(job_id=job.uid)
+                align.delay(job.uid)
             elif action == "pause" and job_state == self.JOB_STATE.STARTED:
                 job.state = self.JOB_STATE.PAUSED
                 send_stop_job_command(app.redis, data["job_uid"])
@@ -368,7 +372,7 @@ class Job(views.MethodView):
         return jsonify(resp)
 
 
-job_view = Job.as_view(name='Job')
+job_view = Jobs.as_view(name='Job')
 jobs.add_url_rule("/job/<string:job_type>/", view_func=job_view, methods=["GET", "POST", "DELETE", "PATCH"])
 
 # jobs.add_url_rule(

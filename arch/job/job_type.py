@@ -1,4 +1,4 @@
-from arch.job import align
+#from arch.job.do_job import align
 
 
 class JobType(object):
@@ -13,6 +13,6 @@ class JobType(object):
         if hasattr(cls, item):
             return getattr(cls, item)
 
-    @staticmethod
-    def align_job(job_id):
-        align.delay(job_id)
+    #@staticmethod
+    #def align_job(job_id):
+    #    align.delay(job_id)

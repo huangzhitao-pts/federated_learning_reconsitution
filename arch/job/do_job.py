@@ -1,3 +1,7 @@
+import sys, os
+
+sys.path.append("/home/huangzhitao/project/federated_learning_reconsitution/tensorflow_federated")
+
 from datetime import datetime
 from rq.decorators import job
 

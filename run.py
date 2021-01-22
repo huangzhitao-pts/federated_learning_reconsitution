@@ -1,3 +1,8 @@
+import sys, os
+
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "tensorflow_federated"))
+print(sys.path)
+
 from server import create_app
 
 
