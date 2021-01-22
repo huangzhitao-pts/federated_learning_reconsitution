@@ -180,9 +180,8 @@ class Job(views.MethodView):
             "description": String,
             "conf": {
                 "dataSet": [
-                    {"organization": "dataSet"}
+                    {"uid": "", "field": ""}
                 ]
-            },
         }
 
 
@@ -291,7 +290,6 @@ class Job(views.MethodView):
 
         # job type
         assert hasattr(self.JOB_TYPE, f"{job_type}_job")
-        job_type = getattr(self.JOB_TYPE, f"{job_type}_job")
 
         # check job
         job = db_job(
@@ -313,22 +311,20 @@ class Job(views.MethodView):
                 # update redis job status
                 # start job
                 # job_type.delay(job.uid)
-                job_type(job.uid)
+                getattr(self.JOB_TYPE, f"{job_type}_job")(job_id=job.uid)
             elif action == "pause" and job_state == self.JOB_STATE.STARTED:
                 job.state = self.JOB_STATE.PAUSED
                 send_stop_job_command(app.redis, data["job_uid"])
-            app.db.commit()
 
             # update redis job status
             mapping_data = {k: v for k, v in vars(job).items() if not k.startswith("_")}
+            app.db.commit()
             mapping_data["creation_timestamp"] = mapping_data["creation_timestamp"].timestamp()
             mapping_data["completion_timestamp"] = mapping_data["completion_timestamp"].timestamp()
             mapping_data["training_timestamp"] = mapping_data["training_timestamp"].timestamp()
 
             app.redis.hmset(data["job_uid"], mapping_data)
             # app.redis.hset(data["job_uid"], "")
-
-
         return "ok"
 
     def delete(self, job_type):

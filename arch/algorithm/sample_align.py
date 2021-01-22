@@ -1,49 +1,59 @@
-#
-# from tensorflow_federated.simulation.vertical_sample_align import FederatedLearningJob
-# from arch.job.job_state import JobState
-#
-#
-# class SampleAlign(FederatedLearningJob):
-#     def __init__(self, align_job_id, dataset_ids, dataset_from_another_org, org_id, **kwargs):
-#         self._dataset_ids = dataset_ids
-#         super().__init__(align_job_id, {}, dataset_ids, 1, **kwargs)
-#         self._dataset_from_another_org = dataset_from_another_org
-#         self._org_id = org_id
-#         self._controller = AlignJobInfoController.restore(align_job_id)
-#         self._ALIGNED_ID_TEMPLATE = '/aligned_data/{}/'.format(align_job_id) + 'aligned_id_{}.txt'
-#         self._ALIGNED_DATASET_TEMPLATE = '/aligned_data/{}/'.format(align_job_id) + 'aligned_data_{}.csv'
-#
-#     def _get_uid_list(self):
-#         session = sessionmaker(bind=_SQLALCHEMY_ENGINE)()
-#         try:
-#             uid_row = session.query(SchemaOrganization.uid).join(Dataset, SchemaOrganization.schema_id == Dataset.schema_id).filter(Dataset.dataset_id.in_(self._dataset_ids)).all()
-#             uids = [uid[0] for uid in uid_row]
-#         except Exception:
-#             raise
-#         finally:
-#             session.close()
-#         return uids
-#
-#     def _get_client_id_url_tuples(self):
-#         session = sessionmaker(bind=_SQLALCHEMY_ENGINE)()
-#         try:
-#             clients_row = session.query(Client).join(Dataset, Client.client_id == Dataset.client_id).filter(Dataset.dataset_id.in_(self._dataset_ids)).all()
-#             clients_tuple = [(client.client_id, client.client_address) for client in clients_row]
-#         except Exception:
-#             raise
-#         finally:
-#             session.close()
-#         return clients_tuple
-#
-#     def _get_dataset_url_list(self):
-#         session = sessionmaker(bind=_SQLALCHEMY_ENGINE)()
-#         try:
-#             datasets_row = session.query(Dataset).filter(Dataset.dataset_id.in_(self._dataset_ids)).all()
-#             datasets_url_list = [dataset.dataset_url for dataset in datasets_row]
-#         except Exception:
-#             raise
-#         finally:
-#             session.close()
-#         print(datasets_url_list)
-#         return datasets_url_list
-#
+import json
+from tensorflow_federated.simulation.vertical_sample_align import FederatedLearningJob
+from arch.job.job_state import JobState
+
+from arch.storage.mysql.session import Session
+from arch.storage.mysql.model.register_table import Job, User, DataSet
+from arch.job.job_type import JobType
+from config import DeployMentConfig
+
+
+class SampleAlign(FederatedLearningJob):
+    def __init__(self, job_id, **kwargs):
+        super().__init__(job_id, **kwargs)
+        # self._controller = AlignJobInfoController.restore(align_job_id)
+        self._ALIGNED_ID_TEMPLATE = '/aligned_data/{}/'.format(job_id) + 'aligned_id_{}.txt'
+        self._ALIGNED_DATASET_TEMPLATE = '/aligned_data/{}/'.format(job_id) + 'aligned_data_{}.csv'
+        self.session = Session(DeployMentConfig.SQLALCHEMY_DATABASE_URI)
+
+    def _get_uid_list(self):
+        job = self.session.query(Job).filter_by(
+            uid=self._job_id,
+            job_type=JobType.ALIGN
+        ).first()
+        with open(job.conf_path, "rb") as f:
+            conf = json.load(f)
+            return [i["field"] for i in conf["conf"]["dataSet"]]
+
+    def _get_client_id_url_tuples(self):
+        job = self.session.query(Job).filter_by(
+            uid=self._job_id,
+            job_type=JobType.ALIGN
+        ).first()
+        with open(job.conf_path, "rb") as f:
+            conf = json.load(f)
+            dataSet = conf["conf"]["dataSet"]
+            patty_ip_address_list = list()
+            for i in dataSet:
+                party = self.session.query(User.id, User.ip_address).join(
+                    DataSet, DataSet.user_uid == User.uid
+                ).filter(DataSet.uid == i["uid"]).first()
+                patty_ip_address_list.append(party)
+        return patty_ip_address_list
+
+    def _get_dataset_url_list(self):
+        job = self.session.query(Job).filter_by(
+            uid=self._job_id,
+            job_type=JobType.ALIGN
+        ).first()
+        with open(job.conf_path, "rb") as f:
+            conf = json.load(f)
+            dataSet = conf["conf"]["dataSet"]
+            file_path_list = list()
+            for i in dataSet:
+                file_path = self.session.query(DataSet).filter_by(
+                    uid=i["uid"]
+                ).first()
+                file_path_list.append(file_path[0])
+        return file_path_list
+

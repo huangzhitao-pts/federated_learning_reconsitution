@@ -13,5 +13,6 @@ class JobType(object):
         if hasattr(cls, item):
             return getattr(cls, item)
 
-    def align_job(self, *args, **kwargs):
-        align.delay(*args, **kwargs)
+    @staticmethod
+    def align_job(job_id):
+        align.delay(job_id)

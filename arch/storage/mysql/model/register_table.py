@@ -59,6 +59,7 @@ class User(Base):
     uid = Column('uid', String(36), unique=True)
     username = Column('username', String(128))
     password_hash = Column('password', String(128))
+    ip_address = Column('ip_address', String(128))
     organization_uid = Column(String(36), ForeignKey('organization.uid', ondelete='CASCADE'))
     role_id = Column(Integer, ForeignKey('roles.id', ondelete='CASCADE'))
 
@@ -148,63 +149,63 @@ class Job(Base):
 
 if __name__ == '__main__':
     from uuid import uuid1
-    a = WorkspaceDataset()
-    a.id = 1
-    print(vars(a))
-    # from sqlalchemy import create_engine
-    # from sqlalchemy.orm import sessionmaker, scoped_session
-    #
-    # engine = create_engine(
-    #             "mysql+pymysql://root:111@192.168.89.155:3310/federated_learning?charset=utf8",
-    #             echo=False,
-    #             max_overflow=0,
-    #             pool_size=20,
-    #             pool_timeout=30,
-    #             pool_recycle=3600
-    # )
-    # Session = sessionmaker(bind=engine)
-    # db = scoped_session(Session)
-    #
-    # Role.insert_roles(db)
-    #
-    # point = Organization()
-    # point.uid = uuid1()
-    # point.name = "point"
-    #
-    # zhongyuan = Organization()
-    # zhongyuan.uid = uuid1()
-    # zhongyuan.name = "zhongyuan"
-    #
-    # tencent = Organization()
-    # tencent.uid = uuid1()
-    # tencent.name = "tencent"
-    #
-    # db.add(point)
-    # db.add(zhongyuan)
-    # db.add(tencent)
-    #
-    # db.add(User(
-    #     uid=uuid1(),
-    #     username="hzt",
-    #     password="pbkdf2:sha256:150000$A4y5a3Pg$725e2cfc8c466c82751d5a68b5cafb19b6751f4dc36edd3c1ea8a0bf24e843a5",
-    #     organization_uid=point.uid,
-    #     role_id=2
-    # ))
-    # db.add(User(
-    #     uid=uuid1(),
-    #     username="zy",
-    #     password="pbkdf2:sha256:150000$A4y5a3Pg$725e2cfc8c466c82751d5a68b5cafb19b6751f4dc36edd3c1ea8a0bf24e843a5",
-    #     organization_uid=zhongyuan.uid,
-    #     role_id=2
-    # ))
-    # db.add(User(
-    #     uid=uuid1(),
-    #     username="tx",
-    #     password="pbkdf2:sha256:150000$A4y5a3Pg$725e2cfc8c466c82751d5a68b5cafb19b6751f4dc36edd3c1ea8a0bf24e843a5",
-    #     organization_uid=tencent.uid,
-    #     role_id=2
-    # ))
-    # db.commit()
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker, scoped_session
+
+    engine = create_engine(
+                "mysql+pymysql://root:111@192.168.89.155:3310/federated_learning?charset=utf8",
+                echo=False,
+                max_overflow=0,
+                pool_size=20,
+                pool_timeout=30,
+                pool_recycle=3600
+    )
+    Session = sessionmaker(bind=engine)
+    db = scoped_session(Session)
+
+    Role.insert_roles(db)
+
+    point = Organization()
+    point.uid = uuid1()
+    point.name = "point"
+
+    zhongyuan = Organization()
+    zhongyuan.uid = uuid1()
+    zhongyuan.name = "zhongyuan"
+
+    tencent = Organization()
+    tencent.uid = uuid1()
+    tencent.name = "tencent"
+
+    db.add(point)
+    db.add(zhongyuan)
+    db.add(tencent)
+
+    db.add(User(
+        uid=uuid1(),
+        username="hzt",
+        password="pbkdf2:sha256:150000$A4y5a3Pg$725e2cfc8c466c82751d5a68b5cafb19b6751f4dc36edd3c1ea8a0bf24e843a5",
+        organization_uid=point.uid,
+        ip_address="52.80.133.18:30001",
+        role_id=2
+    ))
+    db.add(User(
+        uid=uuid1(),
+        username="zy",
+        password="pbkdf2:sha256:150000$A4y5a3Pg$725e2cfc8c466c82751d5a68b5cafb19b6751f4dc36edd3c1ea8a0bf24e843a5",
+        organization_uid=zhongyuan.uid,
+        ip_address="52.80.133.18:30002",
+        role_id=2
+    ))
+    db.add(User(
+        uid=uuid1(),
+        username="tx",
+        password="pbkdf2:sha256:150000$A4y5a3Pg$725e2cfc8c466c82751d5a68b5cafb19b6751f4dc36edd3c1ea8a0bf24e843a5",
+        organization_uid=tencent.uid,
+        ip_address="52.80.133.18:30003",
+        role_id=2
+    ))
+    db.commit()
 
     # print(generate_password_hash("123"))
     # Base.metadata.drop_all(engine)

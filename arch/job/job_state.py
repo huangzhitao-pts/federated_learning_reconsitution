@@ -18,7 +18,7 @@ class JobState(object):
             port=DeployMentConfig.REDIS_PORT)
 
     def sample_align(self):
-        pass
+        self.redis.hset(self.job_id, "state", self.STARTED)
 
     def feature_engineering(self):
         pass

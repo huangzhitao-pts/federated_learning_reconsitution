@@ -6,6 +6,8 @@ from arch.storage.mysql.session import Session
 from arch.job.job_state import JobState
 from arch.storage.mysql.model.register_table import Job
 
+from arch.algorithm.sample_align import SampleAlign
+
 from config import DeployMentConfig
 
 redis = RedisConnect(
@@ -19,14 +21,18 @@ db = Session(DeployMentConfig.SQLALCHEMY_DATABASE_URI)
 def align(job_id):
     print("align start !!!")
     print(job_id)
+    SampleAlign(job_id).run()
     print("align end !!!")
 
-    # update redis state
-    update_data = {"status":JobState.FINISHED, "completion_timestamp": datetime.utcnow()}
-    redis.hmset(job_id, update_data)
+    update_data = {"state": JobState.FINISHED, "completion_timestamp": datetime.utcnow()}
     # update mysql state
     db.query(Job).filter_by(uid=job_id).update(update_data)
     db.commit()
+
+    # update redis state
+    update_data["completion_timestamp"] = update_data["completion_timestamp"].timestamp()
+    redis.hmset(job_id, update_data)
+
     return job_id
 
 
